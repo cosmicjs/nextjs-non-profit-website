@@ -1,9 +1,12 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
-import Image from 'next/image'
 import styles from '../styles/Home.module.css'
 
-const Home: NextPage = () => {
+import * as Cosmic from 'cosmicjs'
+import Link from 'next/link';
+const api = Cosmic();
+
+const Home: NextPage = ({ students }) => {
   return (
     <div className={styles.container}>
       <Head>
@@ -16,9 +19,47 @@ const Home: NextPage = () => {
         <h1 className={styles.title}>
           All of our students
         </h1>
+        {
+          students != null &&
+          students.map((student: any) => {
+            <Link
+              passHref
+              key={student.name}
+              href={`/student/${encodeURIComponent(student.slug)}`}
+            >
+              <div key={student.slug}>
+                <div>{student.name}</div>
+                <img src={student.student_headshot} height={250} width={250} alt={student.name} />
+                <div>{student.major}</div>
+                <div>{student.university}</div>
+                <div>{student.story}</div>
+              </div>
+            </Link>
+          })
+        }
       </main>
     </div>
   )
 }
 
 export default Home
+
+export async function getStaticProps() {
+  const bucket = api.bucket({
+    slug: process.env.BUCKET_SLUG,
+    read_key: process.env.READ_KEY,
+  })
+
+  const students = await bucket.getObjects({
+    query: {
+      type: "students"
+    },
+    limit: 10
+  })
+
+  return {
+    props: {
+      students,
+    },
+  }
+}
