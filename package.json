@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "axios": "^0.26.1",
     "cosmicjs": "^4.1.2",
     "next": "12.1.0",
     "react": "17.0.2",

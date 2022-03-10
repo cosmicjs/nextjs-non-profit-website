@@ -1,10 +1,9 @@
+import axios from 'axios'
 import type { NextPage } from 'next'
 import Head from 'next/head'
+import Image from 'next/image'
+import Link from 'next/link'
 import styles from '../styles/Home.module.css'
-
-import * as Cosmic from 'cosmicjs'
-import Link from 'next/link';
-const api = Cosmic();
 
 const Home: NextPage = ({ students }) => {
   return (
@@ -29,7 +28,7 @@ const Home: NextPage = ({ students }) => {
             >
               <div key={student.slug}>
                 <div>{student.name}</div>
-                <img src={student.student_headshot} height={250} width={250} alt={student.name} />
+                <Image src={student.student_headshot} height={250} width={250} alt={student.name} />
                 <div>{student.major}</div>
                 <div>{student.university}</div>
                 <div>{student.story}</div>
@@ -45,16 +44,14 @@ const Home: NextPage = ({ students }) => {
 export default Home
 
 export async function getStaticProps() {
-  const bucket = api.bucket({
-    slug: process.env.BUCKET_SLUG,
-    read_key: process.env.READ_KEY,
-  })
+  const query = {
+    type: "students",
+  }
 
-  const students = await bucket.getObjects({
-    query: {
-      type: "students"
-    },
-    limit: 10
+  const students = await axios.get(`${process.env.BASE_URL}/buckets/${process.env.BUCKET_SLUG}/objects?query=${query}&limit=10`, {
+    params: {
+      read_key: process.env.READ_KEY
+    }
   })
 
   return {
