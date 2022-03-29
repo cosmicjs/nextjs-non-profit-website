@@ -5,6 +5,15 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Student } from '../types'
 
+import Cosmic from 'cosmicjs'
+const api = Cosmic()
+const bucket = api.bucket({
+  slug: process.env.BUCKET_SLUG,
+  read_key: process.env.READ_KEY,
+})
+
+
+
 const Home: NextPage = ({ students }) => {
   if (!students) {
     return <div>Loading our incredible students...</div>
@@ -59,23 +68,11 @@ const Home: NextPage = ({ students }) => {
 }
 
 export async function getStaticProps() {
-  const cosmicUrl = `${process.env.BASE_URL}/buckets/${process.env.BUCKET_SLUG}/objects`
-
   const query = {
     type: "students",
   }
-
-  const params = {
-    read_key: process.env.READ_KEY,
-    query: encodeURIComponent(JSON.stringify(query)),
-    limit: 10,
-  }
-
-  // const studentsReq = await axios.get(cosmicUrl, { params })
-
-  const studentsReq = await axios.get(`${cosmicUrl}?read_key=${process.env.READ_KEY}&query=%7B%22type%22%3A%22students%22%7D`)
-
-  const students: Student[] = studentsReq.data.objects
+  const studentsReq = await bucket.getObjects({ query })
+  const students: Student[] = studentsReq.objects
 
   return {
     props: {
