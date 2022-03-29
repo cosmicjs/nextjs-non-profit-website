@@ -2,7 +2,7 @@
 
 ## Setting up the Next.js app
 
-Run the following command in your terminal to create a newv Next.js app:
+Run the following command in your terminal to create a new Next.js app:
 
 ```bash
 $ yarn create next-app --typescript
