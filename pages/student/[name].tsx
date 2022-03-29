@@ -1,36 +1,62 @@
-import axios from 'axios'
+import { useEffect } from 'react'
+import Cosmic from 'cosmicjs'
 import Image from 'next/image'
+import { loadStripe } from '@stripe/stripe-js';
 import { Donor, Student } from '../../types'
 
+// Make sure to call `loadStripe` outside of a component’s render to avoid
+// recreating the `Stripe` object on every render.
+const stripePromise = loadStripe(
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+);
+
 function Student({ student, donors }) {
+    useEffect(() => {
+        // Check to see if this is a redirect back from Checkout
+        const query = new URLSearchParams(window.location.search);
+        if (query.get('success')) {
+            console.log('Donation made! You will receive an email confirmation.');
+        }
+
+        if (query.get('canceled')) {
+            console.log('Donation canceled -- something weird happened but please try again.');
+        }
+    }, []);
+
     return (
         <>
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-evenly'
-            }}>
+            <h2 className="text-3xl pb-8">{student.metadata.name}</h2>
+            <div className="container flex gap-4">
                 <Image
                     src={student.metadata.student_headshot.url}
                     alt={student.metadata.name}
                     height={250}
                     width={250}
                 />
-                <div style={{ width: '30%' }}>
-                    <h2>{student.metadata.name}</h2>
+                <div>
                     <p>{student.metadata.major}</p>
                     <p>{student.metadata.university}</p>
                     <p>{student.metadata.story}</p>
+                    <form action="/api/donation" method="POST">
+                        <button type="submit" role="link" className="text-lg bg-lime-500 w-64 mt-6 mx-8">
+                            Make a Donation
+                        </button>
+                    </form>
                 </div>
             </div>
-            {
-                donors?.map((donor: Donor) => {
-                    <>
-                        <p>{donor.metadata.name || 'Anon'}</p>
-                        <p>$ {donor.metadata.amount}</p>
-                        <p>{donor.metadata.message || 'Good luck!'}</p>
-                    </>
-                })
-            }
+            <div
+                className="flex gap-4 p-11"
+            >
+                {
+                    donors?.map((donor: Donor) => (
+                        <div key={donor.slug} className="hover:text-blue-600 border-2 rounded p-4 w-64">
+                            <p>{donor.metadata.name || 'Anon'}</p>
+                            <p>${donor.metadata.amount}</p>
+                            <p>{donor.metadata.message || 'Good luck!'}</p>
+                        </div>
+                    ))
+                }
+            </div>
         </>
     )
 }
@@ -39,41 +65,34 @@ function Student({ student, donors }) {
 export async function getServerSideProps(context) {
     const slug = context.params.name
 
-    const cosmicUrl = `${process.env.BASE_URL}/buckets/${process.env.BUCKET_SLUG}/objects`
+    const api = Cosmic()
 
-    const studentQuery = {
-        type: "students",
-        slug: slug
-    }
-
-    const studentParams = {
-        query: encodeURIComponent(JSON.stringify(studentQuery)),
-        limit: 10,
+    const bucket = api.bucket({
+        slug: process.env.BUCKET_SLUG,
         read_key: process.env.READ_KEY,
-    }
+    })
 
-    // const studentReq: Student = await axios.get(cosmicUrl, { params: studentParams })
+    const studentRes = await bucket.getObjects({
+        props: "metadata",
+        query: {
+            slug: slug,
+            type: "students",
+        }
+    })
 
-    // const donorsReq: Donor[] = await axios.get(cosmicUrl, { params: donorParams })
+    const student: Student = studentRes.objects[0]
 
-    const studentReq = await axios.get(`${cosmicUrl}?read_key=${process.env.READ_KEY}&query=%7B%22slug%22%3A%22${slug}%22%7D`)
+    const donorsRes = await bucket.getObjects({
+        props: "metadata",
+        query: {
+            type: "donors",
+            'metadata.student': {
+                $eq: student.metadata.name
+            },
+        }
+    })
 
-    const student: Student = studentReq.data.objects[0]
-
-    const donorsQuery = {
-        type: "donors",
-        "$or": [{"metadata.student": student.metadata.name}]
-    }
-
-    const donorsParams = {
-        query: encodeURIComponent(JSON.stringify(donorsQuery)),
-        limit: 10,
-        read_key: process.env.READ_KEY
-    }
-    
-    const donorsReq = await axios.get(`${cosmicUrl}?read_key=${process.env.READ_KEY}&query=%7B%22%24or%22%3A%20%5B%7B%22metadata.student%22%3A%20${encodeURIComponent(JSON.stringify(student.metadata.name))}%7D%5D%7D`)
-
-    const donors: Donor[] = donorsReq.data.objects
+    const donors: Donor[] = donorsRes.objects
 
     return {
         props: {
