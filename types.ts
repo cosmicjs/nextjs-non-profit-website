@@ -13,6 +13,7 @@ export interface Student {
 }
 
 export interface Donor {
+    slug: string
     metadata: {
         name: string
         amount: number
