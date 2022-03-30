@@ -4,12 +4,6 @@ import Image from 'next/image'
 import { loadStripe } from '@stripe/stripe-js';
 import { Donor, Student } from '../../types'
 
-// Make sure to call `loadStripe` outside of a component’s render to avoid
-// recreating the `Stripe` object on every render.
-const stripePromise = loadStripe(
-    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-);
-
 function Student({ student, donors }) {
     useEffect(() => {
         // Check to see if this is a redirect back from Checkout
@@ -38,9 +32,30 @@ function Student({ student, donors }) {
                     <p>{student.metadata.university}</p>
                     <p>{student.metadata.story}</p>
                     <form action="/api/donation" method="POST">
-                        <button type="submit" role="link" className="text-lg bg-lime-500 w-64 mt-6 mx-8">
-                            Make a Donation
-                        </button>
+                        <input name="student_id" type="hidden" value={student.id} />
+                        <div>
+                            <label>
+                                Donation Amount<br />
+                                $<input className="border" name="amount" type="number" defaultValue={100} />
+                            </label>
+                        </div>
+                        <div>
+                            <label>
+                                Name<br />
+                                <input className="border" name="name" type="text" defaultValue="Anonymous" />
+                            </label>
+                        </div>
+                        <div>
+                            <label>
+                                Message<br />
+                                <input className="border" name="message" type="text" defaultValue="Good Luck!" />
+                            </label>
+                        </div>
+                        <div>
+                            <button type="submit" role="link" className="text-lg bg-lime-500 w-64 mt-6 mx-8">
+                                Make a Donation
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -52,7 +67,7 @@ function Student({ student, donors }) {
                         <div key={donor.slug} className="hover:text-blue-600 border-2 rounded p-4 w-64">
                             <p>{donor.metadata.name || 'Anon'}</p>
                             <p>${donor.metadata.amount}</p>
-                            <p>{donor.metadata.message || 'Good luck!'}</p>
+                            <p>{donor.metadata.message}</p>
                         </div>
                     ))
                 }
@@ -73,7 +88,7 @@ export async function getServerSideProps(context) {
     })
 
     const studentRes = await bucket.getObjects({
-        props: "metadata",
+        props: "metadata,id",
         query: {
             slug: slug,
             type: "students",
@@ -81,18 +96,17 @@ export async function getServerSideProps(context) {
     })
 
     const student: Student = studentRes.objects[0]
-
     const donorsRes = await bucket.getObjects({
         props: "metadata",
         query: {
             type: "donors",
             'metadata.student': {
-                $eq: student.metadata.name
+                $eq: student.id
             },
         }
     })
-
-    const donors: Donor[] = donorsRes.objects
+    const donors: Donor[] = donorsRes?.objects
+    
 
     return {
         props: {

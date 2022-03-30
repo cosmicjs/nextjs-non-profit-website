@@ -17,7 +17,6 @@ yarn dev
 You'll need to create an `.env` file in the root of the project. It should have the following values:
 
 ```env
-BASE_URL=https://api.cosmicjs.com/v2
 READ_KEY=your_cosmic_read_key
 WRITE_KEY=your_cosmic_write_key
 BUCKET_SLUG=your_cosmic_bucket_slug
