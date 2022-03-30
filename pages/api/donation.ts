@@ -10,16 +10,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const bucket = api.bucket({
         slug: process.env.BUCKET_SLUG,
+        read_key: process.env.READ_KEY,
         write_key: process.env.WRITE_KEY,
       })
+      const { student_id, amount, name, message } = req.body;
 
+      const student = (await bucket.getObject({id: student_id, props: 'title'})).object;
+      
       // Create Checkout Sessions from body params.
       const session = await stripe.checkout.sessions.create({
         line_items: [
           {
-            // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
-            price: 'price_1KeP5WFi6eQznQn91h8mI33G',
+            amount: amount*100, // Cents
+            currency: 'usd',
             quantity: 1,
+            name: `Donation - ${student.title}`
           },
         ],
         mode: 'payment',
@@ -27,15 +32,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         cancel_url: `${req.headers.referer}/?canceled=true`,
       });
 
-      const customer = await stripe.customers.list({
+      const customer = await stripe.customers.list({ // TODO Fix this
         limit: 1,
       })
-
-      const student = req.headers.referer?.split('/')[4].split('-')
-      const studentFirstName = student != undefined ? student[0][0].toUpperCase() + student[0].slice(1) : ''
-      const studentLastName = student != undefined ? student[1][0].toUpperCase() + student[1].slice(1) : ''
-
-      const studentName = `${studentFirstName} ${studentLastName}`
 
       const donorParams = {
         title: customer.data[0].name,
@@ -44,20 +43,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             {
                 title: 'Name',
                 type: 'text',
-                value: customer.data[0].name,
+                value: name,
                 key: 'name',
             },
             {
                 title: 'Student',
                 type: 'text',
-                value: studentName,
+                value: student.title,
                 key: 'student',
             },
             {
                 title: 'Amount',
                 type: 'number',
-                value: 2950,
+                value: Number(amount),
                 key: 'amount',
+            },
+            {
+              title: 'Message',
+              type: 'text',
+              value: message,
+              key: 'message',
             }
         ]
     }
