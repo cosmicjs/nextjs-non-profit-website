@@ -101,7 +101,7 @@ export async function getServerSideProps(context) {
         query: {
             type: "donors",
             'metadata.student': {
-                $eq: student.metadata.name
+                $eq: student.id
             },
         }
     })

@@ -15,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
       const { student_id, amount, name, message } = req.body;
 
-      const student = (await bucket.getObject({id: student_id, props: 'title'})).object;
+      const student = (await bucket.getObject({id: student_id, props: 'id,title'})).object;
       
       // Create Checkout Sessions from body params.
       const session = await stripe.checkout.sessions.create({
@@ -48,8 +48,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
             {
                 title: 'Student',
-                type: 'text',
-                value: student.title,
+                type: 'object',
+                object_type: 'students',
+                value: student.id,
                 key: 'student',
             },
             {
