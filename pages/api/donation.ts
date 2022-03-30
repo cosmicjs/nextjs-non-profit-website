@@ -63,6 +63,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               type: 'text',
               value: message,
               key: 'message',
+            },
+            {
+              title: 'Stripe Customer ID',
+              type: 'text',
+              value: customer.data[0].id,
+              key: 'stripe_id',
             }
         ]
     }
