@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import Cosmic from 'cosmicjs'
 import Image from 'next/image'
-import { loadStripe } from '@stripe/stripe-js';
 import { Donor, Student } from '../../types'
 
 function Student({ student, donors }) {
