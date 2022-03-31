@@ -247,32 +247,193 @@ export async function getServerSideProps(context) {
 }
 ```
 
-Then we'll pass this data to the component to highlight a specific student it to the users and potential donors.
+Then we'll pass this data to the component to highlight a specific student to the users and potential donors. In the `Student` component, we're going to do a few things. First, we'll check to see if the student page has been access via a redirect from the Stripe checkout page. Then we'll display the student's info we have stored in Cosmic. Next, we'll have a form for donors to fill out if they want to make a donation to this particular student. Finally, we'll have a list of all the donors for this particular student.
+
+So you can replace the outline of the `Student` component with the following, complete code.
 
 ```tsx
-component code here
+function Student({ student, donors }) {
+    useEffect(() => {
+        // Check to see if this is a redirect back from Checkout
+        const query = new URLSearchParams(window.location.search);
+        if (query.get('success')) {
+            console.log('Donation made! You will receive an email confirmation.');
+        }
+
+        if (query.get('canceled')) {
+            console.log('Donation canceled -- something weird happened but please try again.');
+        }
+    }, []);
+
+    return (
+        <>
+            <h2 className="text-3xl pb-8">{student.metadata.name}</h2>
+            <div className="container flex gap-4">
+                <Image
+                    src={student.metadata.student_headshot.url}
+                    alt={student.metadata.name}
+                    height={250}
+                    width={250}
+                />
+                <div>
+                    <p>{student.metadata.major}</p>
+                    <p>{student.metadata.university}</p>
+                    <p>{student.metadata.story}</p>
+                    <form action="/api/donation" method="POST">
+                        <input name="student_id" type="hidden" value={student.id} />
+                        <div>
+                            <label>
+                                Donation Amount<br />
+                                $<input className="border" name="amount" type="number" defaultValue={100} />
+                            </label>
+                        </div>
+                        <div>
+                            <label>
+                                Name<br />
+                                <input className="border" name="name" type="text" defaultValue="Anonymous" />
+                            </label>
+                        </div>
+                        <div>
+                            <label>
+                                Message<br />
+                                <input className="border" name="message" type="text" defaultValue="Good Luck!" />
+                            </label>
+                        </div>
+                        <div>
+                            <button type="submit" role="link" className="text-lg bg-lime-500 w-64 mt-6 mx-8">
+                                Make a Donation
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div
+                className="flex gap-4 p-11"
+            >
+                {
+                    donors?.map((donor: Donor) => (
+                        <div key={donor.slug} className="hover:text-blue-600 border-2 rounded p-4 w-64">
+                            <p>{donor.metadata.name || 'Anon'}</p>
+                            <p>${donor.metadata.amount}</p>
+                            <p>{donor.metadata.message}</p>
+                        </div>
+                    ))
+                }
+            </div>
+        </>
+    )
+}
 ```
 
-## Showing donors for the student
+If you run the app now with `yarn dev` you should see something similar to this for one of the students.
 
-Now that we have the page for individual students, we need to show which donors have contributed to their funds. To do that, we'll add some new donors in the Cosmic admin area.
+![a student page with the donation form and the current list of donors]()
 
-![adding new donor objects in Cosmic]()
+### Adding the Stripe checkout functionality
 
-This will give us some data to display for each of the students and we can add this to our existing `getServerSideProps` function.
+The last thing we need to add is the API to that gets called with the donation form is submitted and we're going to use [Stripe](https://stripe.com/) to handle this. If you look in the `pages > api` directory in your project, you'll see a file called `hello.ts`. You can delete this placeholder file and create a new file called `donation.ts`.
+
+Let's open this new file and the following imports.
 
 ```tsx
-add donor call in getServerSideProps and add donor data to props here
+import type { NextApiRequest, NextApiResponse } from 'next'
+import Cosmic from 'cosmicjs'
+
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 ```
 
-### Adding a donation link
+Since we only have to handle one POST request, then our handler function can be relatively simple. We'll do a quick check to make sure a POST request is being made. If any other type of request is made, then we will throw an error.
 
-The last thing we need to add is a donation button. We're going to use [Stripe](https://stripe.com/) to handle those payments.
+After that request check, we'll make a try-catch statement that will first see if we can make a connection to our Cosmic bucket to add a new donor. After that, we make a checkout session with Stripe using the form information passed from the front-end. Then we get the customer from Stripe to add their data to Cosmic.
+
+Lastly, we create the metafield data to add a new donor to our Cosmic dashboard and use the `addObject` method to make sure this donor gets written to the correct object. Go ahead and add the following code to do all of this work.
 
 ```tsx
-stripe code here
-```
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method === 'POST') {
+    try {
+      const api = Cosmic()
 
+      const bucket = api.bucket({
+        slug: process.env.BUCKET_SLUG,
+        read_key: process.env.READ_KEY,
+        write_key: process.env.WRITE_KEY,
+      })
+      
+      const { student_id, amount, name, message } = req.body
+
+      const student = (await bucket.getObject({ id: student_id, props: 'id,title' })).object
+
+      // Create Checkout Sessions from body params.
+      const session = await stripe.checkout.sessions.create({
+        line_items: [
+          {
+            amount: amount * 100, // Cents
+            currency: 'usd',
+            quantity: 1,
+            name: `Donation - ${student.title}`
+          },
+        ],
+        mode: 'payment',
+        success_url: `${req.headers.referer}/?success=true`,
+        cancel_url: `${req.headers.referer}/?canceled=true`,
+      })
+
+      const customer = await stripe.customers.list({ // TODO Fix this
+        limit: 1,
+      })
+
+      const donorParams = {
+        title: customer.data[0].name,
+        type: 'donors',
+        metafields: [
+          {
+            title: 'Name',
+            type: 'text',
+            value: name,
+            key: 'name',
+          },
+          {
+            title: 'Student',
+            type: 'object',
+            object_type: 'students',
+            value: student.id,
+            key: 'student',
+          },
+          {
+            title: 'Amount',
+            type: 'number',
+            value: Number(amount),
+            key: 'amount',
+          },
+          {
+            title: 'Message',
+            type: 'text',
+            value: message,
+            key: 'message',
+          },
+          {
+            title: 'Stripe Customer ID',
+            type: 'text',
+            value: customer.data[0].id,
+            key: 'stripe_id',
+          }
+        ]
+      }
+
+      await bucket.addObject(donorParams)
+
+      res.redirect(303, session.url)
+
+    } catch (err) {
+      res.status(err.statusCode || 500).json(err.message)
+    }
+  } else {
+    res.setHeader('Allow', 'POST')
+    res.status(405).end('Method Not Allowed')
+  }
+}
+```
 ## Finished code
 
 You can find all of the code for this project in this repo and you can check out some of front-end stuff in this Code Sandbox.

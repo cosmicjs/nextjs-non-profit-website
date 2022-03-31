@@ -1,7 +1,7 @@
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import type { NextApiRequest, NextApiResponse } from 'next'
 import Cosmic from 'cosmicjs'
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
@@ -13,15 +13,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         read_key: process.env.READ_KEY,
         write_key: process.env.WRITE_KEY,
       })
+      
       const { student_id, amount, name, message } = req.body;
 
-      const student = (await bucket.getObject({id: student_id, props: 'id,title'})).object;
-      
+      const student = (await bucket.getObject({ id: student_id, props: 'id,title' })).object;
+
       // Create Checkout Sessions from body params.
       const session = await stripe.checkout.sessions.create({
         line_items: [
           {
-            amount: amount*100, // Cents
+            amount: amount * 100, // Cents
             currency: 'usd',
             quantity: 1,
             name: `Donation - ${student.title}`
@@ -40,48 +41,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         title: customer.data[0].name,
         type: 'donors',
         metafields: [
-            {
-                title: 'Name',
-                type: 'text',
-                value: name,
-                key: 'name',
-            },
-            {
-                title: 'Student',
-                type: 'object',
-                object_type: 'students',
-                value: student.id,
-                key: 'student',
-            },
-            {
-                title: 'Amount',
-                type: 'number',
-                value: Number(amount),
-                key: 'amount',
-            },
-            {
-              title: 'Message',
-              type: 'text',
-              value: message,
-              key: 'message',
-            },
-            {
-              title: 'Stripe Customer ID',
-              type: 'text',
-              value: customer.data[0].id,
-              key: 'stripe_id',
-            }
+          {
+            title: 'Name',
+            type: 'text',
+            value: name,
+            key: 'name',
+          },
+          {
+            title: 'Student',
+            type: 'object',
+            object_type: 'students',
+            value: student.id,
+            key: 'student',
+          },
+          {
+            title: 'Amount',
+            type: 'number',
+            value: Number(amount),
+            key: 'amount',
+          },
+          {
+            title: 'Message',
+            type: 'text',
+            value: message,
+            key: 'message',
+          },
+          {
+            title: 'Stripe Customer ID',
+            type: 'text',
+            value: customer.data[0].id,
+            key: 'stripe_id',
+          }
         ]
-    }
+      }
 
-    await bucket.addObject(donorParams)
+      await bucket.addObject(donorParams)
 
-      res.redirect(303, session.url);
+      res.redirect(303, session.url)
+
     } catch (err) {
-      res.status(err.statusCode || 500).json(err.message);
+      res.status(err.statusCode || 500).json(err.message)
     }
   } else {
-    res.setHeader('Allow', 'POST');
-    res.status(405).end('Method Not Allowed');
+    res.setHeader('Allow', 'POST')
+    res.status(405).end('Method Not Allowed')
   }
 }
