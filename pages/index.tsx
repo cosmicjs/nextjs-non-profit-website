@@ -30,37 +30,40 @@ const Home: NextPage = ({ students }) => {
       </Head>
 
       <main>
-        <h1 className="container pb-8 text-2xl">
+        <h1 className="container pt-8 text-2xl">
           All of our students
         </h1>
         <div
-          className="flex gap-4 p-11"
+          className="flex flex-wrap gap-4 p-11"
         >
           {
             students.map((student: Student) => (
-              <Link
-                passHref
+              <div
+                className="h-96 hover:cursor-pointer hover:text-xl"
                 key={student.metadata.name}
-                href={`/student/${encodeURIComponent(student.slug)}`}
               >
-                <div
-                  key={student.slug}
-                  className="hover:text-blue-600 border-2 rounded p-4 w-64"
+                <Link
+                  passHref
+                  href={`/student/${encodeURIComponent(student.slug)}`}
                 >
-                  <div className="text-lg text-amber-800">
-                    {student.metadata.name}
+                  <div
+                    key={student.slug}
+                    className="border-2 rounded p-4 w-64"
+                  >
+                    <div className="text-amber-800">
+                      {student.metadata.name}
+                    </div>
+                    <Image
+                      src={student.metadata.student_headshot.url}
+                      alt={student.metadata.name}
+                      height={300}
+                      width={300}
+                    />
+                    <div className="border-b-2 p-1">{student.metadata.major}</div>
+                    <div className="p-1">{student.metadata.university}</div>
                   </div>
-                  <Image
-                    src={student.metadata.student_headshot.url}
-                    alt={student.metadata.name}
-                    height={250}
-                    width={250}
-                  />
-                  <div>{student.metadata.major}</div>
-                  <div>{student.metadata.university}</div>
-                  <div>{student.metadata.story}</div>
-                </div>
-              </Link>
+                </Link>
+              </div>
             ))
           }
         </div>

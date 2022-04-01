@@ -57,7 +57,7 @@ $ yarn create next-app --typescript
 Then we can add the packages we'll be working with the following command:
 
 ```bash
-$ yarn add cosmicjs tailwindcss stripe postcss
+$ yarn add cosmicjs tailwindcss stripe postcss @heroicons/react
 ```
 
 There's just one last piece of setup we need to do before we can dive into the code.

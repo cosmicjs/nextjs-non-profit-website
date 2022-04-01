@@ -13,10 +13,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         read_key: process.env.READ_KEY,
         write_key: process.env.WRITE_KEY,
       })
-      
+
       const { student_id, amount, name, message } = req.body;
 
-      const student = (await bucket.getObject({ id: student_id, props: 'id,title' })).object;
+      const student = (await bucket.getObject({ id: student_id, props: 'id,title,slug' })).object;
 
       // Create Checkout Sessions from body params.
       const session = await stripe.checkout.sessions.create({
@@ -33,12 +33,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         cancel_url: `${req.headers.referer}/?canceled=true`,
       });
 
-      const customer = await stripe.customers.list({ // TODO Fix this
-        limit: 1,
-      })
-
       const donorParams = {
-        title: customer.data[0].name,
+        title: name,
         type: 'donors',
         metafields: [
           {
@@ -49,9 +45,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           },
           {
             title: 'Student',
-            type: 'object',
-            object_type: 'students',
-            value: student.id,
+            type: 'text',
+            value: student.slug,
             key: 'student',
           },
           {
@@ -67,9 +62,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             key: 'message',
           },
           {
-            title: 'Stripe Customer ID',
+            title: 'Stripe Session Id',
             type: 'text',
-            value: customer.data[0].id,
+            value: session.id,
             key: 'stripe_id',
           }
         ]

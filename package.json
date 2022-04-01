@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroicons/react": "^1.0.6",
     "@stripe/stripe-js": "^1.24.0",
     "autoprefixer": "^10.4.4",
     "axios": "^0.26.1",
