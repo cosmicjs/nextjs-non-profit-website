@@ -62,7 +62,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             key: 'message',
           },
           {
-            title: 'Stripe Session Id',
+            title: 'Stripe Id',
             type: 'text',
             value: session.id,
             key: 'stripe_id',

@@ -1,12 +1,17 @@
 import { useEffect } from 'react'
 import Cosmic from 'cosmicjs'
-import Image from 'next/image'
 import { Donor, Student } from '../../types'
 import Navigation from '../../components/Navigation'
 import { UserCircleIcon, UserIcon } from '@heroicons/react/solid'
 
+const api = Cosmic()
+
+const bucket = api.bucket({
+    slug: process.env.BUCKET_SLUG,
+    read_key: process.env.READ_KEY,
+})
+
 function Student({ student, donors, total }) {
-    console.log(donors)
     useEffect(() => {
         // Check to see if this is a redirect back from Checkout
         const query = new URLSearchParams(window.location.search)
@@ -26,11 +31,11 @@ function Student({ student, donors, total }) {
             <h2 className="container text-3xl py-8">{student.metadata.name}</h2>
             <div className="container flex gap-4">
                 <div>
-                    <Image
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
                         src={student.metadata.student_headshot.url}
                         alt={student.metadata.name}
-                        height={900}
-                        width={1050}
+                        style={{ backgroundPosition: "cover" }}
                     />
                     <div className="container border-y-2 my-4">
                         <p className="font-bold">Major: {student.metadata.major}</p>
@@ -40,25 +45,25 @@ function Student({ student, donors, total }) {
                 </div>
                 <div>
                     <p className="font-bold text-xl pb-4">Total raised: ${total}</p>
-                    <form action="/api/donation" method="POST">
+                    <form action="/api/donation" method="POST" className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
                         <input name="student_id" type="hidden" value={student.id} />
-                        <div>
-                            <label>
-                                Donation Amount<br />
-                                $<input className="border" name="amount" type="number" defaultValue={100} />
+                        <div className="mb-4">
+                            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="amount">
+                                Donation Amount
                             </label>
+                            <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" name="amount" type="number" defaultValue={100} />
                         </div>
-                        <div>
-                            <label>
-                                Name<br />
-                                <input className="border" name="name" type="text" defaultValue="Anonymous" />
+                        <div className="mb-4">
+                            <label className="block text-gray-700 text-sm font-bold mb-2">
+                                Name
                             </label>
+                            <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline" name="name" type="text" defaultValue="Anonymous" />
                         </div>
-                        <div>
-                            <label>
-                                Message<br />
-                                <input className="border" name="message" type="text" defaultValue="Good Luck!" />
+                        <div className="mb-6">
+                            <label className="block text-gray-700 text-sm font-bold mb-2">
+                                Message
                             </label>
+                            <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline" name="message" type="text" defaultValue="Good Luck!" />
                         </div>
                         <div>
                             <button type="submit" role="link" className="text-lg bg-lime-500 w-64 mt-6 mx-8">
@@ -113,13 +118,6 @@ function Student({ student, donors, total }) {
 export async function getServerSideProps(context) {
     const slug = context.params.name
 
-    const api = Cosmic()
-
-    const bucket = api.bucket({
-        slug: process.env.BUCKET_SLUG,
-        read_key: process.env.READ_KEY,
-    })
-
     const studentRes = await bucket.getObjects({
         props: "metadata,id",
         query: {
@@ -130,33 +128,40 @@ export async function getServerSideProps(context) {
 
     const student: Student = studentRes.objects[0]
 
-    let donorsRes, total
-
     try {
-        donorsRes = await bucket.getObjects({
+        const donorsRes = await bucket.getObjects({
             props: "metadata",
             query: {
                 type: "donors",
-                'metadata.student': {
-                    $eq: slug
-                },
+                "metadata.student": slug,
             }
         })
 
-        total = donorsRes.objects.reduce((a, b) => (a.metadata.amount + b.metadata.amount))
+        let total
+
+        const donors: Donor[] = donorsRes ? donorsRes.objects : null
+
+        if (donors.length === 1) {
+            total = donors[0].metadata.amount
+        } else {
+            total = donors.map(donor => donor.metadata.amount).reduce((prev, curr) => prev + curr, 0)
+        }
+
+        return {
+            props: {
+                student,
+                donors,
+                total
+            },
+        }
     } catch {
-        donorsRes = null
-        total = 0
-    }
-
-    const donors: Donor[] = donorsRes ? donorsRes.objects : null
-
-    return {
-        props: {
-            student,
-            donors,
-            total
-        },
+        return {
+            props: {
+                student,
+                donors: null,
+                total: 0
+            },
+        }
     }
 }
 

@@ -1,7 +1,6 @@
 import axios from 'axios'
 import type { NextPage } from 'next'
 import Head from 'next/head'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Student } from '../types'
 
@@ -13,8 +12,6 @@ const bucket = api.bucket({
   slug: process.env.BUCKET_SLUG,
   read_key: process.env.READ_KEY,
 })
-
-
 
 const Home: NextPage = ({ students }) => {
   if (!students) {
@@ -30,8 +27,8 @@ const Home: NextPage = ({ students }) => {
       </Head>
 
       <main>
-        <h1 className="container pt-8 text-2xl">
-          All of our students
+        <h1 className="px-11 pt-11 text-2xl">
+          Students in your area
         </h1>
         <div
           className="flex flex-wrap gap-4 p-11"
@@ -39,7 +36,7 @@ const Home: NextPage = ({ students }) => {
           {
             students.map((student: Student) => (
               <div
-                className="h-96 hover:cursor-pointer hover:text-xl"
+                className="hover:cursor-pointer hover:text-xl w-64"
                 key={student.metadata.name}
               >
                 <Link
@@ -48,19 +45,22 @@ const Home: NextPage = ({ students }) => {
                 >
                   <div
                     key={student.slug}
-                    className="border-2 rounded p-4 w-64"
+                    className="border-2 rounded max-w-sm rounded overflow-hidden shadow-lg"
                   >
-                    <div className="text-amber-800">
-                      {student.metadata.name}
-                    </div>
-                    <Image
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
                       src={student.metadata.student_headshot.url}
                       alt={student.metadata.name}
-                      height={300}
-                      width={300}
+                      className="w-full"
+                      style={{ backgroundPosition: "cover" }}
                     />
-                    <div className="border-b-2 p-1">{student.metadata.major}</div>
-                    <div className="p-1">{student.metadata.university}</div>
+                    <div className="p-4">
+                      <div className="text-amber-800 p-1">
+                        {student.metadata.name}
+                      </div>
+                      <div className="border-b-2 p-1">{student.metadata.major}</div>
+                      <div className="p-1">{student.metadata.university}</div>
+                    </div>
                   </div>
                 </Link>
               </div>

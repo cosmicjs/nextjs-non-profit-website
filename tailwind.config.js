@@ -7,6 +7,9 @@ module.exports = {
     container: {
       center: true,
     },
+    fontFamily: {
+      "sans": ["Helvetica", "Arial", "sans-serif"],
+    }
   },
   plugins: [],
 }
