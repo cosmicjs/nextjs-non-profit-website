@@ -36,7 +36,7 @@ const Home: NextPage = ({ students }) => {
           {
             students.map((student: Student) => (
               <div
-                className="hover:cursor-pointer hover:text-xl w-64"
+                className="hover:cursor-pointer w-64"
                 key={student.metadata.name}
               >
                 <Link
@@ -49,7 +49,7 @@ const Home: NextPage = ({ students }) => {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={student.metadata.student_headshot.url}
+                      src={`${student.metadata.student_headshot.imgix_url}?w=400`}
                       alt={student.metadata.name}
                       className="w-full"
                       style={{ backgroundPosition: "cover" }}

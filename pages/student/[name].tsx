@@ -33,7 +33,7 @@ function Student({ student, donors, total }) {
                 <div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                        src={student.metadata.student_headshot.url}
+                        src={`${student.metadata.student_headshot.imgix_url}?w=800`}
                         alt={student.metadata.name}
                         style={{ backgroundPosition: "cover" }}
                     />
@@ -66,7 +66,7 @@ function Student({ student, donors, total }) {
                             <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline" name="message" type="text" defaultValue="Good Luck!" />
                         </div>
                         <div>
-                            <button type="submit" role="link" className="text-lg bg-lime-500 w-64 mt-6 mx-8">
+                            <button type="submit" role="link" className="hover:bg-lime-400 text-white font-bold py-2 px-4 border-b-12 border-lime-700 hover:border-lime-500 rounded-full text-lg bg-lime-500 w-64 mt-6 mx-8">
                                 Make a Donation
                             </button>
                         </div>
