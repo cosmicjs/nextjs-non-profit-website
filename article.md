@@ -20,15 +20,15 @@ Make sure you choose the "Multiple" object option. You only have to fill in the 
 
 ![new metafield](https://cdn.cosmicjs.com/aba57050-afaa-11ec-97bc-19d12908cbbe-Screenshot-from-2022-03-29-16-53-10.png)
 
-We'll have a few different fields for our donors: a student name, donation amount, and optionally, a donor name and message. You should have the following metafields when you're done.
+We'll have a few different fields for our donors: a student name, donation amount, the session id from Stripe, and optionally, a donor name and message. You should have the following metafields when you're done.
 
-![complete donor object type](https://cdn.cosmicjs.com/fee15a20-afac-11ec-97bc-19d12908cbbe-Screenshot-from-2022-03-29-17-09-13.png)
+![complete donor object type](https://cdn.cosmicjs.com/73baff90-b449-11ec-97bc-19d12908cbbe-Screenshot-from-2022-04-04-13-57-33.png)
 
 We'll add new donor objects every time a donation is made through Stripe and then we'll be able to show donations for each student once we start building the Next app. Before we get there, let's finish up the object types we'll need by adding another type called `Student`.
 
 You'll go back to your Cosmic dashboard and create a "New Object Type". It will also have the "Multiple" type and this time the "Singular Name" will be `Student`. Once again, we need to create some metafields for this object type. So scroll down to the "Content Model" section add these metafields: the student name, a major, a university, their story, and a headshot. Here's what all of the metafields should look like when you're finished.
 
-![complete student object type](https://cdn.cosmicjs.com/fee15a20-afac-11ec-97bc-19d12908cbbe-Screenshot-from-2022-03-29-17-09-13.png)
+![complete student object type](https://cdn.cosmicjs.com/b68f9c40-b449-11ec-97bc-19d12908cbbe-Screenshot-from-2022-04-04-14-01-43.png)
 
 That's all we need to get everything set up in Cosmic.
 
@@ -77,9 +77,100 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
 
 With all of these values finally in place, we can get to the fun part of building the app.
 
+### Setting up TailwindCSS
+
+In order to take advantage of the TailwindCSS package we install, there are a few configurations we need to add. There should be a `tailwind.config.js` file in the root of your project. Open that file and replace the existing code with the following.
+
+```js
+module.exports = {
+  content: [
+    "./pages/**/*.{js,ts,jsx,tsx}",
+    "./components/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    container: {
+      center: true,
+    },
+    fontFamily: {
+      "sans": ["Helvetica", "Arial", "sans-serif"],
+    }
+  },
+  plugins: [],
+}
+```
+
+Now take a look in the `styles` folder and you should see a `global.css` file. This is how we will enable TailwindCSS in our project. Open this file and replace the existing code with the following.
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+That's all we need for our styles to work. Of course you could write the CSS yourself, but sometimes it's just as good to go with an existing styles package.
+
+## A couple of utility components
+
+Now that we can style the app, let's add a few components that will help tie the pages together. We're going to add a navigation bar so that we can get back to the home page all the time and there will be a branding footer so that you can always show the name of your organization. In the root of the project, add a new folder called `components`.
+
+We'll start by making the navigation, so inside the `components` folder add a new file called `Navigation.tsx`. This will render a link back home. Add the following code to create this component.
+
+```tsx
+import Link from 'next/link'
+import { HomeIcon } from '@heroicons/react/solid'
+
+export default function Navigation() {
+    return (
+        <header className="p-4 border-b-2">
+            <Link
+                passHref
+                href={'/'}
+            >
+                <div className="flex hover:cursor-pointer">
+                    <HomeIcon className="h-6 w-6 text-blue-300" />
+                    <div>Home</div>
+                </div>
+            </Link>
+        </header>
+    )
+}
+```
+
+The last little component we need to add is the footer. In the `components` folder, add a new file called `Footer.tsx`. This will render some text and and an icon image at the bottom of each page. In this new file, add the following code.
+
+```tsx
+export default function Footer() {
+    return (
+        <footer className="p-4 border-t-2 flex gap-2">
+            <div>Powered by</div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img alt="Cosmic logo" src="https://cdn.cosmicjs.com/049dabb0-8e19-11ea-81c6-b3a804bfff46-cosmic-dark.png" width="100" height="100"/>
+        </footer>
+    )
+}
+```
+
+Those are the only two components that we needed to make. Now you'll need to update your `_app.tsx` file to include the `Footer` component. That way it will show on every page of the app. So open this file and update the existing component to match this:
+
+```tsx
+...
+import Footer from '../components/Footer'
+
+function MyApp({ Component, pageProps }: AppProps) {
+  return (
+    <div className="flex flex-col h-screen justify-between">
+      <Component {...pageProps} />
+      <Footer />
+    </div>
+  )
+}
+...
+```
+
+Notice that there is a new import statement and that the whole app is now wrapped in a styled `div` that also contains that footer element. We're only adding the `Navigation` element to individual student pages, which we'll get to later.
 ## Displaying all of the students
 
-e can start working on the Next app to display all of the students to anyone who visits the website. We'll start by updating the existing `index.tsx` file to import and use Cosmic to pull in the student data. So add the follow code right below the existing imports in the file.
+We can start working on the Next app to display all of the students to anyone who visits the website. We'll start by updating the existing `index.tsx` file to import and use Cosmic to pull in the student data. So add the follow code right below the existing imports in the file.
 
 ```tsx
 ...
@@ -132,37 +223,43 @@ const Home: NextPage = ({ students }) => {
       </Head>
 
       <main>
-        <h1 className="container pb-8 text-2xl">
-          All of our students
+        <h1 className="px-11 pt-11 text-2xl">
+          Students in your area
         </h1>
         <div
-          className="flex gap-4 p-11"
+          className="flex flex-wrap gap-4 p-11"
         >
           {
             students.map((student: Student) => (
-              <Link
-                passHref
+              <div
+                className="hover:cursor-pointer w-64"
                 key={student.metadata.name}
-                href={`/student/${encodeURIComponent(student.slug)}`}
               >
-                <div
-                  key={student.slug}
-                  className="hover:text-blue-600 border-2 rounded p-4 w-64"
+                <Link
+                  passHref
+                  href={`/student/${encodeURIComponent(student.slug)}`}
                 >
-                  <div className="text-lg text-amber-800">
-                    {student.metadata.name}
+                  <div
+                    key={student.slug}
+                    className="border-2 rounded max-w-sm rounded overflow-hidden shadow-lg"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`${student.metadata.student_headshot.imgix_url}?w=400`}
+                      alt={student.metadata.name}
+                      className="w-full"
+                      style={{ backgroundPosition: "cover" }}
+                    />
+                    <div className="p-4">
+                      <div className="text-amber-800 p-1">
+                        {student.metadata.name}
+                      </div>
+                      <div className="border-b-2 p-1">{student.metadata.major}</div>
+                      <div className="p-1">{student.metadata.university}</div>
+                    </div>
                   </div>
-                  <Image
-                    src={student.metadata.student_headshot.url}
-                    alt={student.metadata.name}
-                    height={250}
-                    width={250}
-                  />
-                  <div>{student.metadata.major}</div>
-                  <div>{student.metadata.university}</div>
-                  <div>{student.metadata.story}</div>
-                </div>
-              </Link>
+                </Link>
+              </div>
             ))
           }
         </div>
@@ -175,7 +272,7 @@ const Home: NextPage = ({ students }) => {
 
 It's mapping over the `students` array to create an element to highlight each student. Each of these elements can be clicked on to learn more about a particular student and that's the page we're going to work on now. We'll come back and add more styling, but if you run the app with `yarn dev`, you should see something similar to this.
 
-![students on the home page](https://cdn.cosmicjs.com/753670c0-b07f-11ec-97bc-19d12908cbbe-Screenshot-from-2022-03-30-18-16-28.png)
+![students on the home page](https://cdn.cosmicjs.com/69882730-b504-11ec-b861-d7583e511b10-Screenshot-from-2022-04-05-12-17-56.png)
 
 ## Making a page for individual students
 
@@ -186,8 +283,9 @@ Let's start by adding the imports we'll need to get this page working. At the to
 ```tsx
 import { useEffect } from 'react'
 import Cosmic from 'cosmicjs'
-import Image from 'next/image'
 import { Donor, Student } from '../../types'
+import Navigation from '../../components/Navigation'
+import { UserCircleIcon, UserIcon } from '@heroicons/react/solid'
 ```
 
 Don't worry about the types file yet. We'll be adding that shortly. For now, let's add a skeleton for the `Student` component below our imports.
@@ -196,7 +294,7 @@ Don't worry about the types file yet. We'll be adding that shortly. For now, let
 function Student({ student, donors }) {
     return (
         <>
-            <h2 className="text-3xl pb-8">{student.metadata.name}</h2>
+            <h2 className="container text-3xl py-8">{student.metadata.name}</h2>
         </>
     )
 }
@@ -210,13 +308,6 @@ We'll be adding a lot more to this component, but we have to get the `student` a
 export async function getServerSideProps(context) {
     const slug = context.params.name
 
-    const api = Cosmic()
-
-    const bucket = api.bucket({
-        slug: process.env.BUCKET_SLUG,
-        read_key: process.env.READ_KEY,
-    })
-
     const studentRes = await bucket.getObjects({
         props: "metadata,id",
         query: {
@@ -226,23 +317,41 @@ export async function getServerSideProps(context) {
     })
 
     const student: Student = studentRes.objects[0]
-    const donorsRes = await bucket.getObjects({
-        props: "metadata",
-        query: {
-            type: "donors",
-            'metadata.student': {
-                $eq: student.id
+
+    try {
+        const donorsRes = await bucket.getObjects({
+            props: "metadata",
+            query: {
+                type: "donors",
+                "metadata.student": slug,
+            }
+        })
+
+        let total
+
+        const donors: Donor[] = donorsRes ? donorsRes.objects : null
+
+        if (donors.length === 1) {
+            total = donors[0].metadata.amount
+        } else {
+            total = donors.map(donor => donor.metadata.amount).reduce((prev, curr) => prev + curr, 0)
+        }
+
+        return {
+            props: {
+                student,
+                donors,
+                total
             },
         }
-    })
-    const donors: Donor[] = donorsRes?.objects
-    
-
-    return {
-        props: {
-            student,
-            donors
-        },
+    } catch {
+        return {
+            props: {
+                student,
+                donors: null,
+                total: 0
+            },
+        }
     }
 }
 ```
@@ -252,10 +361,12 @@ Then we'll pass this data to the component to highlight a specific student to th
 So you can replace the outline of the `Student` component with the following, complete code.
 
 ```tsx
-function Student({ student, donors }) {
+...
+function Student({ student, donors, total }) {
     useEffect(() => {
         // Check to see if this is a redirect back from Checkout
-        const query = new URLSearchParams(window.location.search);
+        const query = new URLSearchParams(window.location.search)
+
         if (query.get('success')) {
             console.log('Donation made! You will receive an email confirmation.');
         }
@@ -266,68 +377,99 @@ function Student({ student, donors }) {
     }, []);
 
     return (
-        <>
-            <h2 className="text-3xl pb-8">{student.metadata.name}</h2>
+        <div>
+            <Navigation />
+            <h2 className="container text-3xl py-8">{student.metadata.name}</h2>
             <div className="container flex gap-4">
-                <Image
-                    src={student.metadata.student_headshot.url}
-                    alt={student.metadata.name}
-                    height={250}
-                    width={250}
-                />
                 <div>
-                    <p>{student.metadata.major}</p>
-                    <p>{student.metadata.university}</p>
-                    <p>{student.metadata.story}</p>
-                    <form action="/api/donation" method="POST">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={`${student.metadata.student_headshot.imgix_url}?w=800`}
+                        alt={student.metadata.name}
+                        style={{ backgroundPosition: "cover" }}
+                    />
+                    <div className="container border-y-2 my-4">
+                        <p className="font-bold">Major: {student.metadata.major}</p>
+                        <p className="font-bold border-b-2">University: {student.metadata.university}</p>
+                        <p className="py-2">{student.metadata.story}</p>
+                    </div>
+                </div>
+                <div>
+                    <p className="font-bold text-xl pb-4">Total raised: ${total}</p>
+                    <form action="/api/donation" method="POST" className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
                         <input name="student_id" type="hidden" value={student.id} />
-                        <div>
-                            <label>
-                                Donation Amount<br />
-                                $<input className="border" name="amount" type="number" defaultValue={100} />
+                        <div className="mb-4">
+                            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="amount">
+                                Donation Amount
                             </label>
+                            <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" name="amount" type="number" defaultValue={100} />
+                        </div>
+                        <div className="mb-4">
+                            <label className="block text-gray-700 text-sm font-bold mb-2">
+                                Name
+                            </label>
+                            <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline" name="name" type="text" defaultValue="Anonymous" />
+                        </div>
+                        <div className="mb-6">
+                            <label className="block text-gray-700 text-sm font-bold mb-2">
+                                Message
+                            </label>
+                            <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline" name="message" type="text" defaultValue="Good Luck!" />
                         </div>
                         <div>
-                            <label>
-                                Name<br />
-                                <input className="border" name="name" type="text" defaultValue="Anonymous" />
-                            </label>
-                        </div>
-                        <div>
-                            <label>
-                                Message<br />
-                                <input className="border" name="message" type="text" defaultValue="Good Luck!" />
-                            </label>
-                        </div>
-                        <div>
-                            <button type="submit" role="link" className="text-lg bg-lime-500 w-64 mt-6 mx-8">
+                            <button type="submit" role="link" className="hover:bg-lime-400 text-white font-bold py-2 px-4 border-b-12 border-lime-700 hover:border-lime-500 rounded-full text-lg bg-lime-500 w-64 mt-6 mx-8">
                                 Make a Donation
                             </button>
                         </div>
                     </form>
+                    <div className="flex flex-col gap-4 pt-4 w-full">
+                        {
+                            donors ? donors.map((donor: Donor) => (
+                                <div key={donor.slug} className="border-y-2 rounded p-4 w-64 flex gap-4">
+                                    <UserCircleIcon className="h-12 w-12 text-green-300" />
+                                    <div>
+                                        <p>{donor.metadata.name}</p>
+                                        <p>${donor.metadata.amount}</p>
+                                    </div>
+                                </div>
+                            ))
+                                :
+                                <div className="border-2 rounded p-4 w-64 flex gap-4">
+                                    <UserCircleIcon className="h-12 w-12 text-green-300" />
+                                    <p>Be the first donor!</p>
+                                </div>
+                        }
+                    </div>
                 </div>
             </div>
-            <div
-                className="flex gap-4 p-11"
-            >
+            <div className="flex flex-col gap-4 p-11 w-full">
+                <h2 className="text-xl font-bold">Encouragement</h2>
                 {
-                    donors?.map((donor: Donor) => (
-                        <div key={donor.slug} className="hover:text-blue-600 border-2 rounded p-4 w-64">
-                            <p>{donor.metadata.name || 'Anon'}</p>
-                            <p>${donor.metadata.amount}</p>
+                    donors ? donors.map((donor: Donor) => (
+                        <div key={donor.slug} className="flex flex-col border-y-2 rounded p-4 gap-4">
+                            <div className="w-64 flex gap-4 w-full">
+                                <UserIcon className="h-12 w-12 text-green-300" />
+                                <div className="flex flex-col">
+                                    <p>{donor.metadata.name}</p>
+                                    <p>${donor.metadata.amount}</p>
+                                </div>
+                            </div>
                             <p>{donor.metadata.message}</p>
                         </div>
                     ))
+                        :
+                        <div>You can do it!</div>
                 }
             </div>
-        </>
+        </div>
     )
 }
+...
 ```
 
 If you run the app now with `yarn dev` you should see something similar to this for one of the students.
 
-![a student page with the donation form and the current list of donors]()
+![a student page with the donation form and the current list of donors](https://cdn.cosmicjs.com/8bc12e40-b505-11ec-b861-d7583e511b10-Screenshot-from-2022-04-05-12-26-15.png)
 
 ### Adding the Stripe checkout functionality
 
@@ -344,11 +486,12 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 
 Since we only have to handle one POST request, then our handler function can be relatively simple. We'll do a quick check to make sure a POST request is being made. If any other type of request is made, then we will throw an error.
 
-After that request check, we'll make a try-catch statement that will first see if we can make a connection to our Cosmic bucket to add a new donor. After that, we make a checkout session with Stripe using the form information passed from the front-end. Then we get the customer from Stripe to add their data to Cosmic.
+After that request check, we'll make a try-catch statement that will first see if we can make a connection to our Cosmic bucket to add a new donor. After that, we make a checkout session with Stripe using the form information passed from the front-end. Then we get the session from Stripe to add their data to Cosmic.
 
 Lastly, we create the metafield data to add a new donor to our Cosmic dashboard and use the `addObject` method to make sure this donor gets written to the correct object. Go ahead and add the following code to do all of this work.
 
 ```tsx
+...
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     try {
@@ -359,10 +502,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         read_key: process.env.READ_KEY,
         write_key: process.env.WRITE_KEY,
       })
-      
-      const { student_id, amount, name, message } = req.body
 
-      const student = (await bucket.getObject({ id: student_id, props: 'id,title' })).object
+      const { student_id, amount, name, message } = req.body;
+
+      const student = (await bucket.getObject({ id: student_id, props: 'id,title,slug' })).object;
 
       // Create Checkout Sessions from body params.
       const session = await stripe.checkout.sessions.create({
@@ -377,14 +520,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         mode: 'payment',
         success_url: `${req.headers.referer}/?success=true`,
         cancel_url: `${req.headers.referer}/?canceled=true`,
-      })
-
-      const customer = await stripe.customers.list({ // TODO Fix this
-        limit: 1,
-      })
+      });
 
       const donorParams = {
-        title: customer.data[0].name,
+        title: name,
         type: 'donors',
         metafields: [
           {
@@ -395,9 +534,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           },
           {
             title: 'Student',
-            type: 'object',
-            object_type: 'students',
-            value: student.id,
+            type: 'text',
+            value: student.slug,
             key: 'student',
           },
           {
@@ -413,9 +551,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             key: 'message',
           },
           {
-            title: 'Stripe Customer ID',
+            title: 'Stripe Id',
             type: 'text',
-            value: customer.data[0].id,
+            value: session.id,
             key: 'stripe_id',
           }
         ]
@@ -434,10 +572,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 }
 ```
+
 ## Finished code
 
-You can find all of the code for this project in this repo and you can check out some of front-end stuff in this Code Sandbox.
+You can find all of the code for this project in [this repo](https://github.com/flippedcoder/non-profit-cms).
 
 ## Conclusion
 
-Now you have a fully-integrated donation website that you can customize for any type of fundraiser-donor non-profit. Feel free to clone this and change the styles to match your own business needs.
+Now you have a fully-integrated donation website that you can customize for any type of fundraiser-donor non-profit. Feel free to clone this and change the styles to match your own organization's needs.
