@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import Image from "next/image";
 import Cosmic from 'cosmicjs'
 import { Donor, Student } from '../../types'
 import Navigation from '../../components/Navigation'
-import { UserCircleIcon, UserIcon } from '@heroicons/react/solid'
+import { BadgeCheckIcon, ExclamationIcon, UserCircleIcon, UserIcon } from '@heroicons/react/solid'
 
 const api = Cosmic()
 
@@ -12,15 +13,19 @@ const bucket = api.bucket({
 })
 
 function Student({ student, donors, total }) {
+    const [query, setQuery] = useState<string>("")
+
     useEffect(() => {
         // Check to see if this is a redirect back from Checkout
         const query = new URLSearchParams(window.location.search)
 
         if (query.get('success')) {
+            setQuery('success')
             console.log('Donation made! You will receive an email confirmation.');
         }
 
         if (query.get('canceled')) {
+            setQuery('canceled')
             console.log('Donation canceled -- something weird happened but please try again.');
         }
     }, []);
@@ -28,19 +33,33 @@ function Student({ student, donors, total }) {
     return (
         <div>
             <Navigation />
+            {query === "success" &&
+                <div className="bg-green-100 rounded-lg py-5 px-6 mb-3 text-base text-green-700 inline-flex items-center w-full" role="alert">
+                <BadgeCheckIcon className="w-4 h-4 mr-2 fill-current" />
+                    Donation made! You will receive an email confirmation.
+                </div>
+            }
+            {query === "canceled" &&
+                <div className="bg-yellow-100 rounded-lg py-5 px-6 mb-3 text-base text-yellow-700 inline-flex items-center w-full" role="alert">
+                <ExclamationIcon className="w-4 h-4 mr-2 fill-current" />
+                    Donation canceled -- something weird happened but please try again.
+                </div>
+            }
             <h2 className="container text-3xl py-8">{student.metadata.name}</h2>
             <div className="container flex gap-4">
                 <div>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                         src={`${student.metadata.student_headshot.imgix_url}?w=800`}
                         alt={student.metadata.name}
-                        style={{ backgroundPosition: "cover" }}
+                        layout={undefined}
+                        width="400"
+                        height="400 "
+                        className="bg-center"
                     />
                     <div className="container border-y-2 my-4">
-                        <p className="font-bold">Major: {student.metadata.major}</p>
-                        <p className="font-bold border-b-2">University: {student.metadata.university}</p>
-                        <p className="py-2">{student.metadata.story}</p>
+                        <p className="font-bold pt-4 px-2">Major: {student.metadata.major}</p>
+                        <p className="font-bold border-b-2 pb-4 px-2">University: {student.metadata.university}</p>
+                        <p className="py-4 px-2">{student.metadata.story}</p>
                     </div>
                 </div>
                 <div>
@@ -74,7 +93,7 @@ function Student({ student, donors, total }) {
                     <div className="flex flex-col gap-4 pt-4 w-full">
                         {
                             donors ? donors.map((donor: Donor) => (
-                                <div key={donor.slug} className="border-y-2 rounded p-4 w-64 flex gap-4">
+                                <div key={donor.slug} className="border-b-2 rounded p-4 w-64 flex gap-4">
                                     <UserCircleIcon className="h-12 w-12 text-green-300" />
                                     <div>
                                         <p>{donor.metadata.name}</p>
@@ -95,7 +114,7 @@ function Student({ student, donors, total }) {
                 <h2 className="text-xl font-bold">Encouragement</h2>
                 {
                     donors ? donors.map((donor: Donor) => (
-                        <div key={donor.slug} className="flex flex-col border-y-2 rounded p-4 gap-4">
+                        <div key={donor.slug} className="flex flex-col border-b-2 rounded p-4 gap-4">
                             <div className="w-64 flex gap-4 w-full">
                                 <UserIcon className="h-12 w-12 text-green-300" />
                                 <div className="flex flex-col">

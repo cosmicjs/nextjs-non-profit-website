@@ -8,7 +8,7 @@ export default function Navigation() {
                 passHref
                 href={'/'}
             >
-                <div className="flex hover:cursor-pointer">
+                <div className="flex hover:cursor-pointer gap-2">
                     <HomeIcon className="h-6 w-6 text-blue-300" />
                     <div>Home</div>
                 </div>
