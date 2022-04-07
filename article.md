@@ -14,7 +14,7 @@ The first thing you'll need to set up is a [free Cosmic account](https://app.cos
 
 Next, we'll need to make a few object types for our donors and students. In the Cosmic dashboard, go to "Add Object Type". You'll see this screen.
 
-![new object type](https://cdn.cosmicjs.com/ee335620-afa1-11ec-97bc-19d12908cbbe-Screenshot-from-2022-03-29-15-50-25.png)
+![new object type](https://cdn.cosmicjs.com/6655e500-b6af-11ec-a642-7195085ee56f-Screenshot-from-2022-04-07-15-14-35.png)
 
 Make sure you choose the "Multiple" object option. You only have to fill in the "Singular Name" with `Donor` and the other two fields auto-generate. Further down, we need to define the metafields in the "Content Model".
 
@@ -29,6 +29,14 @@ We'll add new donor objects every time a donation is made through Stripe and the
 You'll go back to your Cosmic dashboard and create a "New Object Type". It will also have the "Multiple" type and this time the "Singular Name" will be `Student`. Once again, we need to create some metafields for this object type. So scroll down to the "Content Model" section add these metafields: the student name, a major, a university, their story, and a headshot. Here's what all of the metafields should look like when you're finished.
 
 ![complete student object type](https://cdn.cosmicjs.com/b68f9c40-b449-11ec-97bc-19d12908cbbe-Screenshot-from-2022-04-04-14-01-43.png)
+
+Now when you get data for your students and donors, you should see something similiar to this for the students in your dashboard.
+
+![students in Cosmic](https://cdn.cosmicjs.com/c0813cf0-b6af-11ec-a642-7195085ee56f-Screenshot-from-2022-04-07-15-16-59.png)
+
+And something similar to this for the donors in your dashboard.
+
+![donors in Cosmic](https://cdn.cosmicjs.com/c0802b80-b6af-11ec-a642-7195085ee56f-Screenshot-from-2022-04-07-15-17-10.png)
 
 That's all we need to get everything set up in Cosmic.
 
@@ -126,7 +134,7 @@ export default function Navigation() {
                 passHref
                 href={'/'}
             >
-                <div className="flex hover:cursor-pointer">
+                <div className="flex hover:cursor-pointer gap-2">
                     <HomeIcon className="h-6 w-6 text-blue-300" />
                     <div>Home</div>
                 </div>
@@ -141,10 +149,15 @@ The last little component we need to add is the footer. In the `components` fold
 ```tsx
 export default function Footer() {
     return (
-        <footer className="p-4 border-t-2 flex gap-2">
-            <div>Powered by</div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img alt="Cosmic logo" src="https://cdn.cosmicjs.com/049dabb0-8e19-11ea-81c6-b3a804bfff46-cosmic-dark.png" width="100" height="100"/>
+        <footer className="p-4 border-t-2">
+            <a href="https://www.cosmicjs.com?ref=non-profit-cms" target="_blank" rel="noopener noreferrer"
+            >
+                <div className="flex gap-2">
+                    <div>Powered by</div>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img alt="Cosmic logo" src="https://cdn.cosmicjs.com/049dabb0-8e19-11ea-81c6-b3a804bfff46-cosmic-dark.png" width="100" height="100" />
+                </div>
+            </a>
         </footer>
     )
 }
@@ -281,14 +294,14 @@ Now, we'll use Next's built-in dynamic routing to create pages for each student.
 Let's start by adding the imports we'll need to get this page working. At the top of the `[name].tsx` file, add the following lines.
 
 ```tsx
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Cosmic from 'cosmicjs'
 import { Donor, Student } from '../../types'
 import Navigation from '../../components/Navigation'
-import { UserCircleIcon, UserIcon } from '@heroicons/react/solid'
+import { BadgeCheckIcon, ExclamationIcon, UserCircleIcon, UserIcon } from '@heroicons/react/solid'
 ```
 
-Don't worry about the types file yet. We'll be adding that shortly. For now, let's add a skeleton for the `Student` component below our imports.
+Don't worry about the `types` file yet. We'll be adding that shortly. For now, let's add a skeleton for the `Student` component below our imports.
 
 ```tsx
 function Student({ student, donors }) {
@@ -363,15 +376,19 @@ So you can replace the outline of the `Student` component with the following, co
 ```tsx
 ...
 function Student({ student, donors, total }) {
+    const [query, setQuery] = useState<string>("")
+
     useEffect(() => {
         // Check to see if this is a redirect back from Checkout
         const query = new URLSearchParams(window.location.search)
 
         if (query.get('success')) {
+            setQuery('success')
             console.log('Donation made! You will receive an email confirmation.');
         }
 
         if (query.get('canceled')) {
+            setQuery('canceled')
             console.log('Donation canceled -- something weird happened but please try again.');
         }
     }, []);
@@ -379,6 +396,18 @@ function Student({ student, donors, total }) {
     return (
         <div>
             <Navigation />
+            {query === "success" &&
+                <div className="bg-green-100 rounded-lg py-5 px-6 mb-3 text-base text-green-700 inline-flex items-center w-full" role="alert">
+                    <BadgeCheckIcon className="w-4 h-4 mr-2 fill-current" />
+                    Donation made! You will receive an email confirmation.
+                </div>
+            }
+            {query === "canceled" &&
+                <div className="bg-yellow-100 rounded-lg py-5 px-6 mb-3 text-base text-yellow-700 inline-flex items-center w-full" role="alert">
+                    <ExclamationIcon className="w-4 h-4 mr-2 fill-current" />
+                    Donation canceled -- something weird happened but please try again.
+                </div>
+            }
             <h2 className="container text-3xl py-8">{student.metadata.name}</h2>
             <div className="container flex gap-4">
                 <div>
@@ -389,9 +418,9 @@ function Student({ student, donors, total }) {
                         style={{ backgroundPosition: "cover" }}
                     />
                     <div className="container border-y-2 my-4">
-                        <p className="font-bold">Major: {student.metadata.major}</p>
-                        <p className="font-bold border-b-2">University: {student.metadata.university}</p>
-                        <p className="py-2">{student.metadata.story}</p>
+                        <p className="font-bold pt-4 px-2">Major: {student.metadata.major}</p>
+                        <p className="font-bold border-b-2 pb-4 px-2">University: {student.metadata.university}</p>
+                        <p className="py-4 px-2">{student.metadata.story}</p>
                     </div>
                 </div>
                 <div>
@@ -425,7 +454,7 @@ function Student({ student, donors, total }) {
                     <div className="flex flex-col gap-4 pt-4 w-full">
                         {
                             donors ? donors.map((donor: Donor) => (
-                                <div key={donor.slug} className="border-y-2 rounded p-4 w-64 flex gap-4">
+                                <div key={donor.slug} className="border-b-2 rounded p-4 w-64 flex gap-4">
                                     <UserCircleIcon className="h-12 w-12 text-green-300" />
                                     <div>
                                         <p>{donor.metadata.name}</p>
@@ -446,7 +475,7 @@ function Student({ student, donors, total }) {
                 <h2 className="text-xl font-bold">Encouragement</h2>
                 {
                     donors ? donors.map((donor: Donor) => (
-                        <div key={donor.slug} className="flex flex-col border-y-2 rounded p-4 gap-4">
+                        <div key={donor.slug} className="flex flex-col border-b-2 rounded p-4 gap-4">
                             <div className="w-64 flex gap-4 w-full">
                                 <UserIcon className="h-12 w-12 text-green-300" />
                                 <div className="flex flex-col">
@@ -469,7 +498,40 @@ function Student({ student, donors, total }) {
 
 If you run the app now with `yarn dev` you should see something similar to this for one of the students.
 
-![a student page with the donation form and the current list of donors](https://cdn.cosmicjs.com/8bc12e40-b505-11ec-b861-d7583e511b10-Screenshot-from-2022-04-05-12-26-15.png)
+![a student page with the donation form and the current list of donors](https://cdn.cosmicjs.com/a36cf950-b6b0-11ec-a642-7195085ee56f-Screenshot-from-2022-04-07-15-23-34.png)
+
+Now that we've gotten all of the functionality filled out, let's go ahead and add that `types.ts` file so that we don't get any TypeScript errors.
+
+### Adding the types file
+
+Having defined types for our data helps us know when APIs have changed and we won't get left with as many unexpected errors in production. In the root of your project, create a new file called `types.ts` and add the following code:
+
+```ts
+export interface Student {
+    metadata: {
+        name: string
+        student_headshot: {
+            url: string
+            imgix_url: string
+        }
+        major: string
+        university: string
+        story: string
+    }
+    slug: string
+}
+
+export interface Donor {
+    slug: string
+    metadata: {
+        name: string
+        amount: number
+        message: string
+    }
+}
+```
+
+This helps us define the data that we expect to use from our API calls to Cosmic.
 
 ### Adding the Stripe checkout functionality
 
