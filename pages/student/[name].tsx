@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import Image from "next/image";
 import Cosmic from 'cosmicjs'
 import { Donor, Student } from '../../types'
 import Navigation from '../../components/Navigation'
@@ -35,26 +34,24 @@ function Student({ student, donors, total }) {
             <Navigation />
             {query === "success" &&
                 <div className="bg-green-100 rounded-lg py-5 px-6 mb-3 text-base text-green-700 inline-flex items-center w-full" role="alert">
-                <BadgeCheckIcon className="w-4 h-4 mr-2 fill-current" />
+                    <BadgeCheckIcon className="w-4 h-4 mr-2 fill-current" />
                     Donation made! You will receive an email confirmation.
                 </div>
             }
             {query === "canceled" &&
                 <div className="bg-yellow-100 rounded-lg py-5 px-6 mb-3 text-base text-yellow-700 inline-flex items-center w-full" role="alert">
-                <ExclamationIcon className="w-4 h-4 mr-2 fill-current" />
+                    <ExclamationIcon className="w-4 h-4 mr-2 fill-current" />
                     Donation canceled -- something weird happened but please try again.
                 </div>
             }
             <h2 className="container text-3xl py-8">{student.metadata.name}</h2>
             <div className="container flex gap-4">
                 <div>
-                    <Image
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
                         src={`${student.metadata.student_headshot.imgix_url}?w=800`}
                         alt={student.metadata.name}
-                        layout={undefined}
-                        width="400"
-                        height="400 "
-                        className="bg-center"
+                        style={{ backgroundPosition: "cover" }}
                     />
                     <div className="container border-y-2 my-4">
                         <p className="font-bold pt-4 px-2">Major: {student.metadata.major}</p>

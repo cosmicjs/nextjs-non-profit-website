@@ -1,7 +1,6 @@
 import axios from 'axios'
 import type { NextPage } from 'next'
 import Head from 'next/head'
-import Image from "next/image";
 import Link from 'next/link'
 import { Student } from '../types'
 
@@ -48,13 +47,12 @@ const Home: NextPage = ({ students }) => {
                     key={student.slug}
                     className="border-2 rounded max-w-sm rounded overflow-hidden shadow-lg"
                   >
-                    <Image
-                      src={`${student.metadata.student_headshot.imgix_url}?w=800`}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`${student.metadata.student_headshot.imgix_url}?w=400`}
                       alt={student.metadata.name}
-                      layout={undefined}
-                      className="w-full bg-center"
-                      width={400}
-                      height={400}
+                      className="w-full"
+                      style={{ backgroundPosition: "cover" }}
                     />
                     <div className="p-4">
                       <div className="text-amber-800 p-1">
