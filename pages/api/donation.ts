@@ -3,7 +3,10 @@ import Cosmic from 'cosmicjs'
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method === 'POST') {
     try {
       const api = Cosmic()
@@ -14,9 +17,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         write_key: process.env.WRITE_KEY,
       })
 
-      const { student_id, amount, name, message } = req.body;
+      const { student_id, amount, name, message } = req.body
 
-      const student = (await bucket.getObject({ id: student_id, props: 'id,title,slug' })).object;
+      const student = (
+        await bucket.getObject({ id: student_id, props: 'id,title,slug' })
+      ).object
 
       // Create Checkout Sessions from body params.
       const session = await stripe.checkout.sessions.create({
@@ -25,13 +30,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             amount: amount * 100, // Cents
             currency: 'usd',
             quantity: 1,
-            name: `Donation - ${student.title}`
+            name: `Donation - ${student.title}`,
           },
         ],
         mode: 'payment',
         success_url: `${req.headers.referer}/?success=true`,
         cancel_url: `${req.headers.referer}/?canceled=true`,
-      });
+      })
 
       const donorParams = {
         title: name,
@@ -66,14 +71,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             type: 'text',
             value: session.id,
             key: 'stripe_id',
-          }
-        ]
+          },
+        ],
       }
 
       await bucket.addObject(donorParams)
 
       res.redirect(303, session.url)
-
     } catch (err) {
       res.status(err.statusCode || 500).json(err.message)
     }
