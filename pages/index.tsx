@@ -1,10 +1,8 @@
-import axios from 'axios'
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
 import { Student } from '../types'
-
-const Cosmic = require('cosmicjs')()
+import Cosmic from 'cosmicjs'
 
 const api = Cosmic()
 

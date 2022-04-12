@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { NextPage } from 'next'
-const Cosmic = require('cosmicjs')()
+import Cosmic from 'cosmicjs'
 import { Donor, Student } from '../../types'
 import Navigation from '../../components/Navigation'
 import {

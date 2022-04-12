@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-const Cosmic = require('cosmicjs')()
+import Cosmic from 'cosmicjs'
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 

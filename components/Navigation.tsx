@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { HomeIcon } from '@heroicons/react/solid'
 
-export default function Navigation() {
+export default function Navigation({}) {
   return (
     <header className="p-4 border-b-2">
       <Link passHref href={'/'}>
