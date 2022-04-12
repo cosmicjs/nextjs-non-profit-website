@@ -78,7 +78,7 @@ export default async function handler(
       await bucket.addObject(donorParams)
 
       res.redirect(303, session.url)
-    } catch (err) {
+    } catch (err: any) {
       res.status(err.statusCode || 500).json(err.message)
     }
   } else {
