@@ -17,9 +17,9 @@ yarn dev
 You'll need to create an `.env` file in the root of the project. It should have the following values:
 
 ```env
+BUCKET_SLUG=your_cosmic_bucket_slug
 READ_KEY=your_cosmic_read_key
 WRITE_KEY=your_cosmic_write_key
-BUCKET_SLUG=your_cosmic_bucket_slug
 STRIPE_SECRET_KEY=your_stripe_secret_key
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
 ```
