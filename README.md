@@ -1,4 +1,4 @@
-## Next.js Non-Profit Website
+# Next.js Non-Profit Website
 A non-profit website template powered by the [Cosmic headless CMS](https://www.cosmicjs.com). Uses Next.js, Tailwind CSS, and Stripe for donation payment processing.
 
 ## Links
