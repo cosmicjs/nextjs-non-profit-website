@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import Cosmic from 'cosmicjs'
+import type { NextPage } from 'next'
+const Cosmic = require('cosmicjs')()
 import { Donor, Student } from '../../types'
 import Navigation from '../../components/Navigation'
 import {
@@ -16,7 +17,13 @@ const bucket = api.bucket({
   read_key: process.env.READ_KEY,
 })
 
-function Student({ student, donors, total }) {
+type StudentPage = {
+  student: Student
+  donors: Donor[]
+  total: number
+}
+
+const Student: NextPage<StudentPage> = ({ student, donors, total }) => {
   const [query, setQuery] = useState<string>('')
 
   useEffect(() => {
@@ -180,7 +187,7 @@ function Student({ student, donors, total }) {
 }
 
 // This gets called on every request
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: any) {
   const slug = context.params.name
 
   const studentRes = await bucket.getObjects({

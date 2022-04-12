@@ -1,4 +1,5 @@
 export interface Student {
+  id: string
   metadata: {
     name: string
     student_headshot: {

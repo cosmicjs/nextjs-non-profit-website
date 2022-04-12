@@ -1,9 +1,10 @@
+import axios from 'axios'
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
 import { Student } from '../types'
 
-import Cosmic from 'cosmicjs'
+const Cosmic = require('cosmicjs')()
 
 const api = Cosmic()
 
@@ -12,7 +13,11 @@ const bucket = api.bucket({
   read_key: process.env.READ_KEY,
 })
 
-const Home: NextPage = ({ students }) => {
+type Students = {
+  students: Student[]
+}
+
+const Home: NextPage<Students> = ({ students }) => {
   if (!students) {
     return <div>Loading our incredible students...</div>
   }
