@@ -48,11 +48,9 @@ const Home: NextPage<Students> = ({ students }) => {
                   className="border-2 rounded max-w-sm rounded overflow-hidden shadow-lg"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`${student.metadata.student_headshot.imgix_url}?w=400`}
-                    alt={student.metadata.name}
-                    className="w-full"
-                    style={{ backgroundPosition: 'cover' }}
+                  <div
+                    className="w-full h-60"
+                    style={{ backgroundSize: `cover`, backgroundPosition: 'top', backgroundImage: `url(${student.metadata.student_headshot.imgix_url}?w=400)` }}
                   />
                   <div className="p-4">
                     <div className="text-amber-800 p-1">
