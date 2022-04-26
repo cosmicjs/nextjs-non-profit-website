@@ -7,7 +7,8 @@ A non-profit website template powered by the [Cosmic headless CMS](https://www.c
 [View the live demo](https://nextjs-non-profit-website.vercel.app/)
 
 ## Screenshots
-<img width="1116" alt="nextjs-non-profit-website-1" src="https://user-images.githubusercontent.com/1950722/162981025-da14b0ab-25ef-436d-b248-a851c403dc71.png">
+<img width="831" alt="non-profit-cms-6" src="https://user-images.githubusercontent.com/1950722/165220800-57880eff-c674-4a3e-b198-6e3900bb429e.png">
+
 <img width="1375" alt="nextjs-non-profit-website-2" src="https://user-images.githubusercontent.com/1950722/162981041-b316e4d1-2a59-4c9e-b49a-a52f653825aa.png">
 
 ## Getting Started
